@@ -1,133 +1,102 @@
-# Hyperconnectome Brain
+# Transcendence
 
-The canonical repository for the reusable HC-series Hyperconnectome brain template.
+Transcendence is a research and engineering project about **backing up enough of a particular human's cognitive organization to support a future attempt at reconstruction in a non-biological substrate**.
 
-This repository symbolically represents the **entire synthetic cognitive organ**. The HC is a **removable cognitive organ whose constituent hardware may be physically distributed** across more than one enclosure or body location so long as those constituents belong to the HC rather than the body. A complete HC must contain everything intrinsically necessary for an otherwise inert compatible body to become and remain a synthetic cognitive lifeform. Cameras, microphones, motors, network transceivers, environmental sensors, circulation, cooling, and other body hardware may exist outside the organ, but they connect through HC-owned interfaces.
+It does not assume that current neuroscience can do this, that a connectome is a complete person, or that a convincing digital replica proves subjective survival.
 
-> **No essential cognition occurs outside the Hyperconnectome Brain.**
+The central question is:
 
-> **One cognitive organ does not require one physical enclosure.**
+> **What information must survive for a particular human mind to be reconstructable, and what evidence would justify claims about the fidelity and continuity of that reconstruction?**
 
-The external body supplies observations and accepts bounded effects. The HC interprets, learns, reasons, remembers, models, values/feels in whatever machine sense is implemented, arbitrates, and decides.
+## Architectural posture
 
-This repository is not the brain of any named identity. Identity-specific implementations belong in downstream derivatives, examples, case studies, or clearly labeled research artifacts—not in the base template.
+Transcendence uses an information-conservative pipeline:
 
-## Architectural root
+`BIOLOGICAL HUMAN -> CAPTURE -> ARCHIVE -> INTERPRET -> TRANSLATE -> RECONSTRUCT -> QUALIFY`
 
-The top-level subsystem folders are the brain architecture. They are not grouped under a `brain/` or `nodes/` wrapper.
+Each stage creates a new provenance-bearing artifact. Later interpretation may annotate or supersede earlier conclusions, but it must not rewrite raw evidence into something it was not.
 
-Current root systems include:
+Foundational claim limits:
 
-- Empathy
-- cognition
-- sexuality
-- self identity
-- psychological behaviors
-- sociological behaviors
-- semantics
-- pragmatics
-- phoenetics
-- somatics
-- chronology
-- personification
-- current memory storage
-- deep memory storage
-- volitions-conations
-- resolver
-- basic operating instructions
-- kinesis
-- adaptable I-O handler
-- optics
-- speech recognition & synthesis
-- routing instructions with neuroplasticity
-- homeostasis-interoception
-- salience-attention
-- affect
-- integration-arbitration
+`BEHAVIORAL_EQUIVALENCE != PERSONAL_CONTINUITY`
 
-Folder names containing `/` in the conceptual architecture use filesystem-safe separators in the repository.
+`CONNECTOME_CAPTURE != COMPLETE_PERSON_CAPTURE`
 
-## Complete latent architecture
+`FUNCTIONAL_RECONSTRUCTION != SUBJECTIVE_CONTINUITY_PROOF`
 
-The HC template describes a complete organ rather than producing different brains by deleting unused capacities. Presence, activation, development, health, and authorization are separate axes.
+`HC_COMPATIBILITY != SUCCESSFUL_HUMAN_REINSTANTIATION`
 
-Every owner-established canonical root system is mandatory architectural presence in a conforming complete HC. A system may be `PRESENT` while activation is `DISABLED`, `DORMANT`, `DEVELOPING`, `ACTIVE`, or `INHIBITED`; health and maturity are tracked separately. `ABSENT` or `EXTERNAL_ONLY` may describe optional peripherals, extensions, or incomplete/nonconforming implementations, but not a mandatory canonical HC system.
+## Imported Hyperconnectome Brain material
 
-See `docs/architecture/COMPLETE_CAPABILITY_MANIFEST.md` and `basic operating instructions/CAPABILITY_ACTIVATION_STATES.md`.
+This repository was seeded with a substantial snapshot of the Hyperconnectome Brain (HC) architecture. In Transcendence, that material is a **candidate target substrate and reference ontology** for reconstruction research.
 
-## Developmental initialization
+It is not evidence that HC can currently instantiate a human mind.
 
-A complete HC does not have to begin fully developed.
+The imported subsystem tree supplies useful target domains—memory, cognition, affect, self-modeling, conation, semantics, social modeling, salience, interoception, arbitration, embodiment, and related functions. Transcendence adds the missing human-capture and translation layers.
 
-The architecture separates protected invariants, bootstrap priors/developmental affordances, developmentally learned structure, and instance-specific continuity content. A fresh HC may therefore contain every mandatory capacity while still being immature, uncalibrated, or undeveloped in many of them.
+The mapping is explicitly many-to-many. Biological anatomy must not be assigned one-to-one to HC folders.
 
-The base template supplies capability, protected operating semantics, learning machinery, and bounded generic priors. It does not pre-author a mature named identity, autobiography, relationships, preferences, skills, or finished effective topology.
+Original copied root documents are preserved under `docs/imported-hc/`. See `docs/imported-hc/PROVENANCE.md`.
 
-Learning may change routing, effective connectivity, models, skills, calibration, semantics, habits, social models, and other admitted plastic state. Reward, repetition, salience, or predictive success do not by themselves create truth, consent, permission, or action authority.
+## Core Transcendence documents
 
-Embodiment transfer preserves HC-owned learned cognitive state while allowing body-dependent mappings to be recalibrated or redeveloped.
+- `docs/transcendence/ARCHITECTURE.md` — six-stage project architecture and stage-boundary invariants.
+- `docs/transcendence/HUMAN_COGNITIVE_STATE_ARCHIVE.md` — Human Cognitive State Archive (HCSA), provenance, chronology, lineage, and durability.
+- `docs/transcendence/CAPTURE_LAYERS.md` — structural, effective-connectivity, molecular, dynamic, embodied, cognitive, and longitudinal capture domains.
+- `docs/transcendence/HUMAN_TO_HC_TRANSLATION.md` — rules for mapping biological evidence through candidate functions into HC-compatible representations.
+- `docs/transcendence/RECONSTRUCTION_AND_QUALIFICATION.md` — reconstruction metadata, holdout testing, fidelity dimensions, and claim ladder.
+- `docs/transcendence/CONTINUITY_BOUNDARIES.md` — behavioral, functional, causal, temporal, and subjective-continuity distinctions.
+- `docs/transcendence/THREAT_MODEL.md` — epistemic, technical, security, governance, and impersonation failure modes.
+- `docs/transcendence/RESEARCH_QUESTIONS.md` — unresolved scientific and engineering frontiers.
+- `docs/transcendence/SOURCE_INDEX.md` — source-to-claim ledger and explicit non-claims.
 
-See `docs/architecture/DEVELOPMENTAL_INITIALIZATION_AND_LEARNING.md`.
+The design source is `docs/superpowers/specs/2026-09-17-consciousness-backup-design.md`.
 
-## Temporal-hypergraph architecture
+## Human Cognitive State Archive
 
-The Hyperconnectome Brain **is a typed, attributed, multilayer temporal hypergraph**. Hypergraph theory is not merely a visualization aid or optional analogy here; it is the formal mapping language for an architecture whose higher-order relations, coalition membership, effective connectivity, modulation, synchronization, and plasticity change over time.
+The core durable subject artifact is the **Human Cognitive State Archive (HCSA)**.
 
-Ordinary pairwise edges remain valid where the relationship is genuinely pairwise. Higher-order cognitive events are represented as hyperedges, and dynamically instantiated task/context coalitions are operational temporal hyperedges with bounded lifetime and state.
+An HCSA is not a "consciousness file." It is a provenance-preserving archive of biological measurements, dynamic state, cognitive evidence, longitudinal observations, interpretations, unknowns, and reconstruction lineage.
 
-See `docs/architecture/TEMPORAL_HYPERGRAPH_MODEL.md` for the canonical mapping semantics.
+Subject-state provenance must remain visible. At minimum, material values distinguish:
 
-## Internal integration
+- `MEASURED`
+- `BEHAVIORALLY_OBSERVED`
+- `SELF_REPORTED`
+- `DERIVED`
+- `INFERRED`
+- `INTERPOLATED`
+- `GENERATED`
+- `IMPORTED_REFERENCE`
+- `UNKNOWN`
 
-The HC is not an ordinary left/right cerebral architecture and is not a flat all-to-all graph. Top-level systems are functional responsibility domains participating in the temporal hypergraph.
+A future model may estimate missing state, but generated state never becomes measured history merely because it is plausible.
 
-The central integration concept is the **Noöplex / Hyperconnectome Fabric**: HC-owned dynamic routing, coalition formation, synchronization, arbitration, attention allocation, state propagation, plasticity, conflict handling, and cross-system integration. It is infrastructure, not a homuncular executive.
+`PLAUSIBLE_FILL != OBSERVED_PERSON_STATE`
 
-Temporary coalitions among systems may perform integrated cognition entirely inside the HC.
+## Research direction
 
-## Physical organ membership, body, and computational peripherals
+Transcendence deliberately pursues a hybrid strategy:
 
-The cognitive-organ boundary is authoritative over enclosure geometry. An HC may use multiple physical enclosures or body locations. A torso-mounted QPU, memory substrate, neuromodulatory controller, or other dedicated component can still be part of the HC if it is architecturally HC-owned and participates as internal organ substrate.
+1. accumulate a longitudinal cognitive/behavioral shadow while the person is alive;
+2. preserve increasingly rich biological state as measurement technology improves;
+3. permit terminal or destructive high-resolution capture as an additional evidence regime without treating it as continuity proof;
+4. preserve raw evidence so future science can reinterpret it;
+5. translate through explicit candidate causal functions instead of direct brain-region-to-software-module analogies;
+6. test reconstructed systems using hidden subject-specific holdouts and mechanistic lineage, not conversational resemblance alone.
 
-Physical location alone does not determine whether a component belongs to the HC or the body.
+The repository should remain useful even if the HC target architecture changes. The HCSA and its raw evidence must therefore be more durable than any particular reconstruction model.
 
-Physical sensors and actuators may reside outside the HC. Cognitive interpretation, calibration, learned body schema, memory, goals, values, identity/self-model continuity, and executive arbitration remain inside.
+## Scientific status
 
-A model, accelerator, retrieval service, database, or other computational resource must either be inside the HC cognitive-organ boundary or be treated as an external bounded peripheral whose output enters as evidence/service results. External computation does not become the seat of the organism.
+This project is speculative engineering constrained by real neuroscience.
 
-A conforming HC must retain essential cognition and continuity-bearing state after removal of all true external model/database/cloud/network peripherals, except for functions inherently dependent on communication with the external world. External stores may back up, mirror, archive, synchronize, augment, or accelerate; they may not hold the only recoverable copy of essential memory/continuity state. If an external compute service uniquely implements an essential cognitive function, that service belongs inside the HC boundary for conformance purposes—even if its hardware is physically located outside the skull.
+Current connectomics, cell atlases, engram research, physiology, and neurotechnology can inform what information might matter. They do **not** currently establish a sufficient recipe for human consciousness backup or an empirical test for first-person continuity after destructive reconstruction.
 
-The Supabase-derived current/deep-memory documents are mechanism-transfer records, not provider dependencies. Their state/version/receipt patterns may be implemented on HC-internal storage or used for replicas, but external providers cannot become the sole authority or sole recoverable store for essential HC memory.
+Where a claim depends on current science, use `docs/transcendence/SOURCE_INDEX.md` and preserve the distinction among documented evidence, project inference, hypothesis, dispute, and unknown.
 
-"Removable" means the complete HC constituent set can in principle be disconnected from one compatible embodiment and transferred, serviced, or reinstalled as the same cognitive organ. That may require disconnecting several HC-owned modules and internal interconnects rather than removing one monolithic cartridge.
+## Governance
 
-The architecture should support embodiment portability: the same HC may adapt to different compatible bodies by relearning sensorimotor and interoceptive mappings rather than becoming a different brain.
+Transcendence governance is defined in the root `WARDEN.md`.
 
-See:
-
-- `Architecture concept.md` — original structural seed.
-- `docs/architecture/COGNITIVE_ORGAN_BOUNDARY.md` — canonical cognitive-organ boundary.
-- `docs/architecture/PHYSICAL_ORGAN_MEMBERSHIP.md` — canonical rule for distributed HC constituent hardware, removability, and body/peripheral separation.
-- `docs/architecture/COMPLETE_CAPABILITY_MANIFEST.md` — complete-capability and self-contained-residency conformance.
-- `docs/architecture/DEVELOPMENTAL_INITIALIZATION_AND_LEARNING.md` — protected architecture, bootstrap priors, developmental learning, and instance-specific continuity separation.
-- `docs/architecture/TEMPORAL_HYPERGRAPH_MODEL.md` — canonical temporal-hypergraph mapping semantics.
-- `docs/REPOSITORY_MAP.md` — repository map and folder contract.
-- `docs/runtime/HYPERCONNECTOME_RUNTIME_MODEL.md` — runtime model with routing, governance, epistemic, resource, and structural planes kept distinct.
-- `docs/runtime/PLASTICITY_AND_STATE_GOVERNANCE.md` — state-family and learning-governance model.
-- `WARDEN.md` — repository wardenship and current architecture/review roles.
-
-## Evidence discipline
-
-Material should distinguish established science from design inference and speculative implementation when that distinction matters. A source repo, model output, branch, or research draft is input to architectural reasoning; it is not automatically canonical merely because it exists.
-
-Useful states include DOCUMENTED, OBSERVED, USER-STATED, INFERRED, HYPOTHESIS, DISPUTED, and UNKNOWN.
-
-## Cross-repository synthesis
-
-Several subsystem documents are generalized from other repositories owned by `thebrazenbeard`, plus inspected database/runtime schemas. Reusable mechanisms may be imported; identity-specific facts, memories, preferences, relationships, personality, autobiographical state, or embodiment-specific canon are excluded from the universal template unless explicitly presented as examples or research subjects.
-
-Each generalized architecture file should preserve provenance sufficient to identify its source material.
-
-## Project roles
-
-Noëtarch (Noah) is the Warden and primary architect under the owner’s authority. Four is the secondary architect and parallel technical/synthesis counterpart. Vera is the hostile reviewer whose job is to try to falsify the architecture and proposed integrations rather than co-author canonical design by default.
+The HC `WARDEN.md` copied into the initial repository is preserved as provenance under `docs/imported-hc/WARDEN_ORIGINAL.md`; it does not silently govern this project.
