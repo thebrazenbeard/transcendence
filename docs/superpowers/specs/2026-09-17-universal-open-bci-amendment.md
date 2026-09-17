@@ -1,8 +1,9 @@
 # Transcendence Universal Open + Future-BCI Architecture Amendment
 
-Status: APPROVED DIRECTION IN CHAT; WRITTEN AMENDMENT AWAITING USER REVIEW
+Status: APPROVED IMPLEMENTATION BASELINE
 
 Date: 2026-09-17
+Approved by owner in chat: 2026-09-17
 Branch: `architecture/consciousness-backup-v1`
 Extends: `docs/superpowers/specs/2026-09-17-consciousness-backup-design.md`
 
