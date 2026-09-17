@@ -1,0 +1,40 @@
+{
+  "schema_id": "TRANSCENDENCE_HCSA_V0",
+  "archive_id": "hcsa:synthetic-example",
+  "subject_ref": "subject:pseudonymous-example",
+  "archive_version": 1,
+  "created_at": "2026-09-17T22:30:00Z",
+  "records": [
+    {
+      "record_id": "rec:structural:1",
+      "provenance_class": "MEASURED",
+      "domain": "STRUCTURAL",
+      "temporal_scope": {
+        "instant": "2026-09-17T22:00:00Z"
+      },
+      "acquisition": {
+        "method": "synthetic-test",
+        "adapter_id": "adapter:test"
+      },
+      "payload_ref": {
+        "media_type": "application/octet-stream",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uri": "artifact://synthetic/structural-1"
+      },
+      "source_record_ids": [],
+      "authority_ref": "authority:subject-controlled"
+    }
+  ],
+  "snapshots": [
+    {
+      "snapshot_id": "snapshot:1",
+      "record_ids": ["rec:structural:1"],
+      "created_at": "2026-09-17T22:31:00Z",
+      "unknown_coverage": [
+        "effective-connectivity not captured",
+        "dynamic-neural state not captured"
+      ]
+    }
+  ],
+  "lineage": []
+}
