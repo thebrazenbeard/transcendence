@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thebrazenbeard.github.io/transcendence/specs/hcsa-v0.schema.json",
+  "title": "Human Cognitive State Archive V0",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "archive_id",
+    "records"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "const": "HCSA-V0"
+    },
+    "archive_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "record_id",
+          "archive_id",
+          "provenance_class",
+          "source_artifact_ids",
+          "observed_at",
+          "payload_ref",
+          "privacy_classification",
+          "authority_scope",
+          "integrity_digest"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "record_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "archive_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provenance_class": {
+            "enum": [
+              "MEASURED",
+              "BEHAVIORALLY_OBSERVED",
+              "SELF_REPORTED",
+              "DERIVED",
+              "INFERRED",
+              "INTERPOLATED",
+              "GENERATED",
+              "IMPORTED_REFERENCE",
+              "UNKNOWN"
+            ]
+          },
+          "source_artifact_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "observed_at": {
+            "type": "string",
+            "minLength": 1
+          },
+          "payload_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "privacy_classification": {
+            "type": "string",
+            "minLength": 1
+          },
+          "authority_scope": {
+            "type": "object"
+          },
+          "integrity_digest": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provenance_history": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "transformation": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}
