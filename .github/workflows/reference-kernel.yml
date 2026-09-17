@@ -27,18 +27,11 @@ jobs:
   unittest:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone exact workflow subject
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          COMMIT_SHA: ${{ github.sha }}
-        run: |
-          git clone --no-checkout "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPOSITORY}.git" repo
-          cd repo
-          git checkout --detach "${COMMIT_SHA}"
+      - name: Check out exact workflow subject
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Run inherited HC reference-kernel tests
-        working-directory: repo/runtime/reference_kernel
+        working-directory: runtime/reference_kernel
         run: python3 -m unittest -v test_hc_kernel.py test_durable_kernel.py
       - name: Run Transcendence core tests
-        working-directory: repo/runtime/transcendence_core
+        working-directory: runtime/transcendence_core
         run: python3 -m unittest -v test_core.py
