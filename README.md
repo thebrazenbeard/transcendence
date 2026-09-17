@@ -121,6 +121,19 @@ Original copied root documents are preserved under `docs/imported-hc/`. See `doc
 
 The base design source is `docs/superpowers/specs/2026-09-17-consciousness-backup-design.md`, extended by `docs/superpowers/specs/2026-09-17-universal-open-bci-amendment.md`.
 
+## Implemented V0 reference contracts
+
+Draft PR #1 now includes executable, substrate-neutral V0 reference material:
+
+- `specs/transcendence/hcsa-v0.schema.json` — HCSA envelope/evidence record contract;
+- `specs/transcendence/bci-adapter-v0.schema.json` — acquisition/effect/bidirectional BCI adapter contract;
+- `specs/transcendence/continuity-lineage-v0.schema.json` — BACKUP / RESTORE / SUCCESSOR / FORK / MIGRATION / GRADUAL_TRANSFER lineage;
+- `specs/transcendence/integrity-manifest-v0.schema.json` — portable integrity manifest;
+- `runtime/transcendence_core/core.py` — canonical JSON hashing, semantic validation, path-safe portability, and integrity verification;
+- `runtime/transcendence_core/test_core.py` — synthetic-only regression tests.
+
+The reference implementation intentionally contains no real person's continuity payload and performs no BCI hardware I/O, capture, reconstruction, activation, or migration.
+
 ## Human Cognitive State Archive
 
 The core durable subject artifact is the **Human Cognitive State Archive (HCSA)**.
