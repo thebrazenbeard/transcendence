@@ -175,6 +175,31 @@ def validate_hcsa(document: Mapping[str, Any]) -> None:
                     "non-measured evidence cannot be promoted into MEASURED through transformation"
                 )
 
+    transformation_inputs: dict[str, tuple[str, ...]] = {}
+    for record_id, record in records_by_id.items():
+        transform = record.get("transformation")
+        if isinstance(transform, Mapping):
+            transformation_inputs[record_id] = tuple(
+                str(input_id) for input_id in transform.get("input_record_ids", [])
+            )
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit_provenance(record_id: str) -> None:
+        if record_id in visiting:
+            raise ValidationError("transformation provenance cycle detected")
+        if record_id in visited:
+            return
+        visiting.add(record_id)
+        for input_id in transformation_inputs.get(record_id, ()):
+            visit_provenance(input_id)
+        visiting.remove(record_id)
+        visited.add(record_id)
+
+    for record_id in records_by_id:
+        visit_provenance(record_id)
+
     snapshots = document.get("snapshots")
     if not isinstance(snapshots, list):
         raise ValidationError("snapshots must be a list")
