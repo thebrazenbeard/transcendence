@@ -37,6 +37,33 @@ CONTINUITY_DIMENSIONS = {
     "PHENOMENAL_SUBJECTIVE",
 }
 
+AUTHORITY_FIELDS = {
+    "storage",
+    "read",
+    "research",
+    "training",
+    "interpretation",
+    "reconstruction",
+    "activation",
+    "replication",
+    "disclosure",
+}
+
+PRIVACY_CLASSES = {
+    "PUBLIC",
+    "PRIVATE_SUBJECT",
+    "SENSITIVE_SUBJECT",
+    "RESTRICTED_SUBJECT",
+}
+
+NONBIOLOGICAL_SUBSTRATES = {
+    "SYNTHETIC",
+    "HYBRID",
+    "EMULATED",
+    "NEUROMORPHIC",
+    "UNKNOWN",
+}
+
 
 class ValidationError(ValueError):
     pass
@@ -60,11 +87,15 @@ def validate_hcsa(document: Mapping[str, Any]) -> None:
     archive_id = _required_text(document, "archive_id")
     if _required_text(document, "schema_version") != "HCSA-V0":
         raise ValidationError("unsupported HCSA schema_version")
+    _required_text(document, "subject_ref")
+    _required_text(document, "created_at")
+
     records = document.get("records")
     if not isinstance(records, list):
         raise ValidationError("records must be a list")
 
     seen: set[str] = set()
+    records_by_id: dict[str, Mapping[str, Any]] = {}
     for record in records:
         if not isinstance(record, Mapping):
             raise ValidationError("record must be an object")
@@ -72,6 +103,8 @@ def validate_hcsa(document: Mapping[str, Any]) -> None:
         if record_id in seen:
             raise ValidationError(f"duplicate record_id: {record_id}")
         seen.add(record_id)
+        records_by_id[record_id] = record
+
         if _required_text(record, "archive_id") != archive_id:
             raise ValidationError("record archive_id mismatch")
         provenance = _required_text(record, "provenance_class")
@@ -79,8 +112,14 @@ def validate_hcsa(document: Mapping[str, Any]) -> None:
             raise ValidationError(f"unknown provenance class: {provenance}")
         _required_text(record, "observed_at")
         _required_text(record, "payload_ref")
-        _required_text(record, "privacy_classification")
-        _required_text(record, "integrity_digest")
+
+        privacy = _required_text(record, "privacy_classification")
+        if privacy not in PRIVACY_CLASSES:
+            raise ValidationError(f"unknown privacy_classification: {privacy}")
+
+        digest = _required_text(record, "integrity_digest")
+        if len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest):
+            raise ValidationError("integrity_digest must be lowercase SHA-256 hex")
 
         sources = record.get("source_artifact_ids")
         if not isinstance(sources, list):
@@ -89,6 +128,14 @@ def validate_hcsa(document: Mapping[str, Any]) -> None:
         authority = record.get("authority_scope")
         if not isinstance(authority, Mapping):
             raise ValidationError("authority_scope must be an object")
+        missing_authority = AUTHORITY_FIELDS - set(authority)
+        if missing_authority:
+            raise ValidationError(
+                f"authority_scope missing fields: {sorted(missing_authority)}"
+            )
+        for key in AUTHORITY_FIELDS:
+            if not isinstance(authority.get(key), bool):
+                raise ValidationError(f"authority_scope.{key} must be boolean")
 
         history = record.get("provenance_history", [])
         if not isinstance(history, list):
@@ -105,6 +152,51 @@ def validate_hcsa(document: Mapping[str, Any]) -> None:
             if not isinstance(transform.get("input_record_ids"), list):
                 raise ValidationError("transformation input_record_ids must be a list")
             _required_text(transform, "method_version")
+        elif transform is not None and not isinstance(transform, Mapping):
+            raise ValidationError("transformation must be an object or null")
+
+    for record_id, record in records_by_id.items():
+        transform = record.get("transformation")
+        if not isinstance(transform, Mapping):
+            continue
+        input_ids = transform.get("input_record_ids", [])
+        for input_id in input_ids:
+            source = records_by_id.get(str(input_id))
+            if source is None:
+                raise ValidationError(
+                    f"record {record_id} transformation references unknown record {input_id}"
+                )
+            if (
+                record.get("provenance_class") == "MEASURED"
+                and source.get("provenance_class")
+                in {"DERIVED", "INFERRED", "INTERPOLATED", "GENERATED", "IMPORTED_REFERENCE"}
+            ):
+                raise ValidationError(
+                    "non-measured evidence cannot be promoted into MEASURED through transformation"
+                )
+
+    snapshots = document.get("snapshots")
+    if not isinstance(snapshots, list):
+        raise ValidationError("snapshots must be a list")
+    snapshot_ids: set[str] = set()
+    for snapshot in snapshots:
+        if not isinstance(snapshot, Mapping):
+            raise ValidationError("snapshot must be an object")
+        snapshot_id = _required_text(snapshot, "snapshot_id")
+        if snapshot_id in snapshot_ids:
+            raise ValidationError(f"duplicate snapshot_id: {snapshot_id}")
+        snapshot_ids.add(snapshot_id)
+        _required_text(snapshot, "cutoff_at")
+        record_ids = snapshot.get("record_ids")
+        if not isinstance(record_ids, list):
+            raise ValidationError("snapshot record_ids must be a list")
+        for record_id in record_ids:
+            if str(record_id) not in records_by_id:
+                raise ValidationError(f"snapshot references unknown record: {record_id}")
+        if not isinstance(snapshot.get("unresolved_conflicts"), list):
+            raise ValidationError("snapshot unresolved_conflicts must be a list")
+        if not isinstance(snapshot.get("unknowns"), list):
+            raise ValidationError("snapshot unknowns must be a list")
 
 
 def validate_bci_adapter(document: Mapping[str, Any]) -> None:
@@ -115,24 +207,60 @@ def validate_bci_adapter(document: Mapping[str, Any]) -> None:
     direction = _required_text(document, "direction")
     if direction not in {"ACQUIRE", "EFFECT", "BIDIRECTIONAL"}:
         raise ValidationError("invalid BCI direction")
+
     modalities = document.get("modalities")
     if not isinstance(modalities, list) or not modalities:
         raise ValidationError("BCI adapter requires at least one modality")
     _required_text(document, "raw_representation")
-    if "semantic_interpretation" in document and "decoder_version" not in document:
-        raise ValidationError("semantic interpretation requires decoder_version")
-    if direction in {"EFFECT", "BIDIRECTIONAL"}:
-        effects = document.get("effect_capabilities")
-        if not isinstance(effects, list) or not effects:
-            raise ValidationError("effect-capable BCI adapter requires effect_capabilities")
-        authority = document.get("effect_authority_scope")
+    _required_text(document, "uncertainty_model")
+
+    normalization = document.get("normalization")
+    if not isinstance(normalization, Mapping):
+        raise ValidationError("BCI adapter requires normalization metadata")
+    _required_text(normalization, "version")
+    if normalization.get("preserves_raw_reference") is not True:
+        raise ValidationError("normalization must preserve raw measurement reference")
+
+    decoder = document.get("decoder")
+    if decoder is not None:
+        if not isinstance(decoder, Mapping):
+            raise ValidationError("decoder must be an object or null")
+        _required_text(decoder, "version")
+        decoder_provenance = _required_text(decoder, "interpretation_provenance")
+        if decoder_provenance not in {
+            "DERIVED",
+            "INFERRED",
+            "INTERPOLATED",
+            "GENERATED",
+            "UNKNOWN",
+        }:
+            raise ValidationError("decoder interpretation cannot masquerade as measured evidence")
+
+    effects = document.get("effect_capabilities")
+    if not isinstance(effects, list):
+        raise ValidationError("effect_capabilities must be a list")
+
+    authority = document.get("effect_authority_scope")
+    if direction in {"EFFECT", "BIDIRECTIONAL"} or effects:
         if not isinstance(authority, Mapping) or not authority:
             raise ValidationError("effect-capable BCI adapter requires effect_authority_scope")
+        _required_text(authority, "scope_id")
+        allowed_effects = authority.get("allowed_effects")
+        if not isinstance(allowed_effects, list):
+            raise ValidationError("effect_authority_scope.allowed_effects must be a list")
+        missing = set(map(str, effects)) - set(map(str, allowed_effects))
+        if missing:
+            raise ValidationError(
+                f"effect_authority_scope does not cover effects: {sorted(missing)}"
+            )
+    elif authority not in (None, {}):
+        raise ValidationError("acquire-only adapter must not imply effect authority")
 
 
 def validate_lineage(document: Mapping[str, Any]) -> None:
     if _required_text(document, "schema_version") != "CONTINUITY-LINEAGE-V0":
         raise ValidationError("unsupported continuity lineage schema_version")
+    _required_text(document, "lineage_id")
     events = document.get("events")
     if not isinstance(events, list):
         raise ValidationError("events must be a list")
@@ -145,22 +273,49 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
         if event_id in seen:
             raise ValidationError(f"duplicate event_id: {event_id}")
         seen.add(event_id)
+
         event_type = _required_text(event, "event_type")
         if event_type not in LINEAGE_EVENT_TYPES:
             raise ValidationError(f"invalid lineage event type: {event_type}")
         _required_text(event, "occurred_at")
+
         predecessors = event.get("predecessor_snapshot_ids")
         descendants = event.get("descendant_snapshot_ids")
         if not isinstance(predecessors, list) or not isinstance(descendants, list):
             raise ValidationError("lineage event requires predecessor/descendant lists")
         if event_type == "FORK" and len(descendants) < 2:
             raise ValidationError("FORK requires at least two descendants")
+
         substrates = event.get("substrates")
-        if not isinstance(substrates, list) or not substrates:
+        if not isinstance(substrates, list):
             raise ValidationError("lineage event requires substrate metadata")
-        if event_type == "GRADUAL_TRANSFER" and len(set(map(str, substrates))) < 2:
-            raise ValidationError("GRADUAL_TRANSFER requires overlapping/multiple substrates")
-        claims = event.get("continuity_claims", {})
+        biological_overlap = False
+        nonbiological_overlap = False
+        for substrate in substrates:
+            if not isinstance(substrate, Mapping):
+                raise ValidationError("substrate participation must be an object")
+            _required_text(substrate, "substrate_id")
+            substrate_class = _required_text(substrate, "substrate_class")
+            role = _required_text(substrate, "role")
+            if role == "OVERLAPPING_ACTIVE":
+                if substrate_class == "BIOLOGICAL":
+                    biological_overlap = True
+                if substrate_class in NONBIOLOGICAL_SUBSTRATES:
+                    nonbiological_overlap = True
+
+        if event_type == "GRADUAL_TRANSFER":
+            if not biological_overlap or not nonbiological_overlap:
+                raise ValidationError(
+                    "GRADUAL_TRANSFER requires overlapping active biological and non-biological substrates"
+                )
+
+        refs = event.get("evidence_refs")
+        if not isinstance(refs, list):
+            raise ValidationError("lineage event evidence_refs must be a list")
+        if not isinstance(event.get("unresolved_questions"), list):
+            raise ValidationError("lineage event unresolved_questions must be a list")
+
+        claims = event.get("continuity_claims")
         if not isinstance(claims, Mapping):
             raise ValidationError("continuity_claims must be an object")
         for dimension, claim in claims.items():
@@ -169,16 +324,21 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
             if not isinstance(claim, Mapping):
                 raise ValidationError("continuity claim must be an object")
             status = _required_text(claim, "status")
-            if dimension == "PHENOMENAL_SUBJECTIVE" and status not in {"UNKNOWN", "UNESTABLISHED"}:
-                raise ValidationError("V0 phenomenal continuity must remain UNKNOWN/UNESTABLISHED")
-            refs = claim.get("evidence_refs")
-            if not isinstance(refs, list):
+            if dimension == "PHENOMENAL_SUBJECTIVE" and status not in {
+                "UNKNOWN",
+                "UNESTABLISHED",
+            }:
+                raise ValidationError(
+                    "V0 phenomenal continuity must remain UNKNOWN/UNESTABLISHED"
+                )
+            claim_refs = claim.get("evidence_refs")
+            if not isinstance(claim_refs, list):
                 raise ValidationError("continuity claim evidence_refs must be a list")
 
 
 def validate_portable_path(path: str) -> str:
-    if not path or "\\" in path:
-        raise ValidationError("portable path must use non-empty POSIX syntax")
+    if not path or "\" in path or ":" in path:
+        raise ValidationError("portable path must use non-empty POSIX relative syntax")
     p = PurePosixPath(path)
     if p.is_absolute() or any(part in {"", ".", ".."} for part in p.parts):
         raise ValidationError("portable path traversal/absolute path rejected")
@@ -192,17 +352,22 @@ def build_integrity_manifest(files: Mapping[str, bytes]) -> dict[str, Any]:
         payload = files[path]
         if not isinstance(payload, (bytes, bytearray)):
             raise TypeError("manifest file payloads must be bytes")
-        entries.append({
-            "path": safe,
-            "sha256": hashlib.sha256(bytes(payload)).hexdigest(),
-            "bytes": len(payload),
-        })
+        entries.append(
+            {
+                "path": safe,
+                "sha256": hashlib.sha256(bytes(payload)).hexdigest(),
+                "bytes": len(payload),
+            }
+        )
     manifest = {"schema_version": "HCSA-INTEGRITY-V0", "entries": entries}
     manifest["manifest_sha256"] = sha256_json(entries)
     return manifest
 
 
-def verify_integrity_manifest(files: Mapping[str, bytes], manifest: Mapping[str, Any]) -> tuple[bool, tuple[str, ...]]:
+def verify_integrity_manifest(
+    files: Mapping[str, bytes],
+    manifest: Mapping[str, Any],
+) -> tuple[bool, tuple[str, ...]]:
     errors: list[str] = []
     if manifest.get("schema_version") != "HCSA-INTEGRITY-V0":
         errors.append("unsupported manifest schema_version")
@@ -238,7 +403,13 @@ def verify_integrity_manifest(files: Mapping[str, bytes], manifest: Mapping[str,
         if len(payload) != entry.get("bytes"):
             errors.append(f"size mismatch: {path}")
 
-    undeclared = sorted(set(files) - declared_paths)
+    safe_actual_paths: set[str] = set()
+    for path in files:
+        try:
+            safe_actual_paths.add(validate_portable_path(path))
+        except ValidationError as exc:
+            errors.append(f"invalid supplied path {path!r}: {exc}")
+    undeclared = sorted(safe_actual_paths - declared_paths)
     errors.extend(f"undeclared file: {path}" for path in undeclared)
     return not errors, tuple(errors)
 
