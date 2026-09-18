@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thebrazenbeard.github.io/transcendence/schemas/continuity-lineage-v0.schema.json",
+  "title": "Transcendence Continuity Lineage V0",
+  "type": "object",
+  "required": ["schema_version", "lineage_id", "events"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "CONTINUITY_LINEAGE_V0"},
+    "lineage_id": {"type": "string", "minLength": 1},
+    "events": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/event"}
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "required": ["dimension", "status", "evidence_refs"],
+      "additionalProperties": false,
+      "properties": {
+        "dimension": {
+          "enum": [
+            "BIOLOGICAL", "INFORMATIONAL_AUTOBIOGRAPHICAL", "PSYCHOLOGICAL",
+            "FUNCTIONAL", "CAUSAL_NEURAL", "TEMPORAL_PROCESS", "PHENOMENAL"
+          ]
+        },
+        "status": {"enum": ["SUPPORTED", "PARTIAL", "UNKNOWN", "CONTRADICTED", "NOT_APPLICABLE"]},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      }
+    },
+    "substrate_participation": {
+      "type": "object",
+      "required": ["substrate_id", "substrate_class", "role", "interval"],
+      "additionalProperties": false,
+      "properties": {
+        "substrate_id": {"type": "string", "minLength": 1},
+        "substrate_class": {
+          "enum": ["BIOLOGICAL", "SYNTHETIC", "HYBRID", "EMULATED", "NEUROMORPHIC", "UNKNOWN"]
+        },
+        "role": {"enum": ["SOURCE", "TARGET", "OVERLAPPING_ACTIVE", "ARCHIVAL_ONLY"]},
+        "interval": {"type": ["string", "null"]}
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": [
+        "event_id", "event_type", "occurred_at", "predecessor_snapshot_ids",
+        "descendant_snapshot_ids", "substrates", "evidence_refs",
+        "continuity_claims", "unresolved_questions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {"type": "string", "minLength": 1},
+        "event_type": {
+          "enum": ["BACKUP", "RESTORE", "SUCCESSOR", "FORK", "MIGRATION", "GRADUAL_TRANSFER"]
+        },
+        "occurred_at": {"type": "string", "format": "date-time"},
+        "predecessor_snapshot_ids": {
+          "type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true
+        },
+        "descendant_snapshot_ids": {
+          "type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true
+        },
+        "substrates": {
+          "type": "array", "items": {"$ref": "#/$defs/substrate_participation"}
+        },
+        "evidence_refs": {
+          "type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true
+        },
+        "continuity_claims": {
+          "type": "array", "items": {"$ref": "#/$defs/claim"}
+        },
+        "unresolved_questions": {
+          "type": "array", "items": {"type": "string"}
+        }
+      }
+    }
+  }
+}
