@@ -215,6 +215,53 @@ class TranscendenceCoreTests(unittest.TestCase):
                 )
             )
 
+    def test_hcsa_snapshot_rejects_records_observed_after_cutoff(self):
+        document = {
+            "schema_version": "HCSA-V0",
+            "archive_id": "synthetic",
+            "subject_ref": "synthetic://subject/001",
+            "created_at": "2040-01-01T00:00:00Z",
+            "records": [
+                {
+                    "record_id": "future-record",
+                    "archive_id": "synthetic",
+                    "provenance_class": "MEASURED",
+                    "source_artifact_ids": [],
+                    "observed_at": "2040-01-01T00:02:00+00:00",
+                    "payload_ref": "objects/future",
+                    "privacy_classification": "PRIVATE_SUBJECT",
+                    "authority_scope": authority_scope(),
+                    "integrity_digest": "3" * 64,
+                    "provenance_history": [],
+                    "transformation": None,
+                }
+            ],
+            "snapshots": [
+                {
+                    "snapshot_id": "snap-early",
+                    "cutoff_at": "2040-01-01T00:01:00Z",
+                    "record_ids": ["future-record"],
+                    "unresolved_conflicts": [],
+                    "unknowns": [],
+                }
+            ],
+        }
+
+        with self.assertRaisesRegex(ValidationError, "observed after cutoff"):
+            validate_hcsa(document)
+
+    def test_hcsa_timestamp_requires_timezone(self):
+        document = {
+            "schema_version": "HCSA-V0",
+            "archive_id": "synthetic",
+            "subject_ref": "synthetic://subject/001",
+            "created_at": "2040-01-01T00:00:00",
+            "records": [],
+            "snapshots": [],
+        }
+        with self.assertRaisesRegex(ValidationError, "timezone offset"):
+            validate_hcsa(document)
+
     def test_read_only_bci_adapter_preserves_raw_reference(self):
         validate_bci_adapter(
             {
