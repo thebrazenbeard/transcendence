@@ -258,6 +258,62 @@ class TranscendenceCoreTests(unittest.TestCase):
                 }
             )
 
+    def test_acquire_only_bci_cannot_smuggle_effect_capabilities(self):
+        with self.assertRaisesRegex(
+            ValidationError,
+            "ACQUIRE adapter cannot declare effect_capabilities",
+        ):
+            validate_bci_adapter(
+                {
+                    "schema_version": "BCI-ADAPTER-V0",
+                    "adapter_id": "synthetic-acquire-with-effect",
+                    "adapter_version": "0.1",
+                    "direction": "ACQUIRE",
+                    "modalities": ["electrophysiology"],
+                    "raw_representation": "application/octet-stream",
+                    "normalization": {
+                        "version": "v1",
+                        "preserves_raw_reference": True,
+                    },
+                    "decoder": None,
+                    "uncertainty_model": "synthetic",
+                    "effect_capabilities": ["synthetic-stimulation"],
+                    "effect_authority_scope": {
+                        "scope_id": "scope-1",
+                        "allowed_effects": ["synthetic-stimulation"],
+                    },
+                    "subject_state_context": None,
+                }
+            )
+
+    def test_effect_direction_requires_declared_effect_capability(self):
+        with self.assertRaisesRegex(
+            ValidationError,
+            "requires at least one effect capability",
+        ):
+            validate_bci_adapter(
+                {
+                    "schema_version": "BCI-ADAPTER-V0",
+                    "adapter_id": "synthetic-effect-empty",
+                    "adapter_version": "0.1",
+                    "direction": "EFFECT",
+                    "modalities": ["stimulation"],
+                    "raw_representation": "application/octet-stream",
+                    "normalization": {
+                        "version": "v1",
+                        "preserves_raw_reference": True,
+                    },
+                    "decoder": None,
+                    "uncertainty_model": "synthetic",
+                    "effect_capabilities": [],
+                    "effect_authority_scope": {
+                        "scope_id": "scope-1",
+                        "allowed_effects": [],
+                    },
+                    "subject_state_context": None,
+                }
+            )
+
     def test_effect_bci_requires_scoped_effect_authority(self):
         with self.assertRaises(ValidationError):
             validate_bci_adapter(
