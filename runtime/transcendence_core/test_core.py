@@ -511,6 +511,22 @@ class TranscendenceCoreTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertTrue(any("undeclared file" in item for item in errors))
 
+    def test_integrity_manifest_rejects_duplicate_declared_paths(self):
+        files = {"objects/a.bin": b"abc"}
+        manifest = build_integrity_manifest(files)
+        manifest["entries"].append(dict(manifest["entries"][0]))
+        manifest["manifest_sha256"] = sha256_json(manifest["entries"])
+
+        ok, errors = verify_integrity_manifest(files, manifest)
+
+        self.assertFalse(ok)
+        self.assertTrue(any("duplicate manifest path" in item for item in errors))
+
+    def test_portability_rejects_noncanonical_path_aliases(self):
+        for bad in ("./objects/a.bin", "objects//a.bin"):
+            with self.assertRaisesRegex(ValidationError, "already be canonical"):
+                validate_portable_path(bad)
+
     def test_portability_rejects_path_traversal_and_platform_paths(self):
         for bad in ("../private", "/absolute", "..\\private", "C:\\private\\x"):
             with self.assertRaises(ValidationError):
