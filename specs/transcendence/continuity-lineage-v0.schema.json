@@ -21,7 +21,8 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/event"
-      }
+      },
+      "minItems": 1
     }
   },
   "$defs": {
