@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thebrazenbeard.github.io/transcendence/schemas/integrity-manifest-v0.schema.json",
+  "title": "Transcendence Integrity Manifest V0",
+  "type": "object",
+  "required": ["schema_version", "archive_id", "created_at", "objects"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "INTEGRITY_MANIFEST_V0"},
+    "archive_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "objects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "media_type", "size_bytes", "algorithm", "digest"],
+        "additionalProperties": false,
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "media_type": {"type": "string", "minLength": 1},
+          "size_bytes": {"type": "integer", "minimum": 0},
+          "algorithm": {"const": "SHA-256"},
+          "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    }
+  }
+}
