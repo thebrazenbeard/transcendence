@@ -156,8 +156,14 @@ def validate_hcsa(document: Mapping[str, Any]) -> None:
             raise ValidationError("provenance_history must be a list")
         if provenance == "MEASURED":
             for item in history:
-                if isinstance(item, Mapping) and item.get("from") == "GENERATED":
-                    raise ValidationError("generated evidence cannot be relabeled measured")
+                if (
+                    isinstance(item, Mapping)
+                    and item.get("to") == "MEASURED"
+                    and item.get("from") != "MEASURED"
+                ):
+                    raise ValidationError(
+                        "non-measured provenance cannot be relabeled MEASURED"
+                    )
 
         transform = record.get("transformation")
         if provenance in {"DERIVED", "INFERRED", "INTERPOLATED", "GENERATED"}:
@@ -182,8 +188,7 @@ def validate_hcsa(document: Mapping[str, Any]) -> None:
                 )
             if (
                 record.get("provenance_class") == "MEASURED"
-                and source.get("provenance_class")
-                in {"DERIVED", "INFERRED", "INTERPOLATED", "GENERATED", "IMPORTED_REFERENCE"}
+                and source.get("provenance_class") != "MEASURED"
             ):
                 raise ValidationError(
                     "non-measured evidence cannot be promoted into MEASURED through transformation"
@@ -321,6 +326,8 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
     events = document.get("events")
     if not isinstance(events, list):
         raise ValidationError("events must be a list")
+    if not events:
+        raise ValidationError("continuity lineage requires at least one event")
 
     seen: set[str] = set()
     lineage_edges: dict[str, set[str]] = {}
