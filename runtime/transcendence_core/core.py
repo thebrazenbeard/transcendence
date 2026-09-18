@@ -382,6 +382,18 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
             claim_refs = claim.get("evidence_refs")
             if not isinstance(claim_refs, list):
                 raise ValidationError("continuity claim evidence_refs must be a list")
+            claim_ref_ids = tuple(str(item) for item in claim_refs)
+            if len(set(claim_ref_ids)) != len(claim_ref_ids):
+                raise ValidationError("continuity claim evidence_refs must be unique")
+            if status in {"SUPPORTED", "PARTIAL"} and not claim_ref_ids:
+                raise ValidationError(
+                    "supported/partial continuity claim requires evidence_refs"
+                )
+            event_ref_ids = set(map(str, refs))
+            if not set(claim_ref_ids).issubset(event_ref_ids):
+                raise ValidationError(
+                    "continuity claim references evidence outside event evidence_refs"
+                )
 
     visiting_snapshots: set[str] = set()
     visited_snapshots: set[str] = set()
