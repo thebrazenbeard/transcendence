@@ -460,6 +460,49 @@ class TranscendenceCoreTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             validate_lineage(invalid)
 
+    def test_supported_continuity_claim_requires_event_bound_evidence(self):
+        base_event = {
+            "event_id": "restore-claim",
+            "event_type": "RESTORE",
+            "occurred_at": "2040-01-01T00:00:00Z",
+            "predecessor_snapshot_ids": ["snap-0"],
+            "descendant_snapshot_ids": ["snap-1"],
+            "substrates": [],
+            "evidence_refs": ["evidence-1"],
+            "continuity_claims": {
+                "FUNCTIONAL": {
+                    "status": "SUPPORTED",
+                    "evidence_refs": ["evidence-1"],
+                }
+            },
+            "unresolved_questions": [],
+        }
+
+        valid = {
+            "schema_version": "CONTINUITY-LINEAGE-V0",
+            "lineage_id": "synthetic-lineage",
+            "events": [base_event],
+        }
+        validate_lineage(valid)
+
+        missing = json.loads(json.dumps(valid))
+        missing["events"][0]["continuity_claims"]["FUNCTIONAL"]["evidence_refs"] = []
+        with self.assertRaisesRegex(
+            ValidationError,
+            "supported/partial continuity claim requires evidence_refs",
+        ):
+            validate_lineage(missing)
+
+        foreign = json.loads(json.dumps(valid))
+        foreign["events"][0]["continuity_claims"]["FUNCTIONAL"]["evidence_refs"] = [
+            "evidence-not-on-event"
+        ]
+        with self.assertRaisesRegex(
+            ValidationError,
+            "outside event evidence_refs",
+        ):
+            validate_lineage(foreign)
+
     def test_phenomenal_continuity_cannot_be_promoted_to_proven_in_v0(self):
         lineage = {
             "schema_version": "CONTINUITY-LINEAGE-V0",
