@@ -264,6 +264,14 @@ def validate_bci_adapter(document: Mapping[str, Any]) -> None:
     effects = document.get("effect_capabilities")
     if not isinstance(effects, list):
         raise ValidationError("effect_capabilities must be a list")
+    if direction == "ACQUIRE" and effects:
+        raise ValidationError(
+            "ACQUIRE adapter cannot declare effect_capabilities"
+        )
+    if direction in {"EFFECT", "BIDIRECTIONAL"} and not effects:
+        raise ValidationError(
+            "effect-capable adapter requires at least one effect capability"
+        )
 
     authority = document.get("effect_authority_scope")
     if direction in {"EFFECT", "BIDIRECTIONAL"} or effects:
