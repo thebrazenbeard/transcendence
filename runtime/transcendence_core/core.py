@@ -408,9 +408,12 @@ def validate_portable_path(path: str) -> str:
     if not path or "\\" in path or ":" in path:
         raise ValidationError("portable path must use non-empty POSIX relative syntax")
     p = PurePosixPath(path)
+    normalized = str(p)
     if p.is_absolute() or any(part in {"", ".", ".."} for part in p.parts):
         raise ValidationError("portable path traversal/absolute path rejected")
-    return str(p)
+    if normalized != path:
+        raise ValidationError("portable path must already be canonical")
+    return normalized
 
 
 def build_integrity_manifest(files: Mapping[str, bytes]) -> dict[str, Any]:
@@ -459,6 +462,9 @@ def verify_integrity_manifest(
             path = validate_portable_path(str(entry["path"]))
         except (KeyError, ValidationError) as exc:
             errors.append(str(exc))
+            continue
+        if path in declared_paths:
+            errors.append(f"duplicate manifest path: {path}")
             continue
         declared_paths.add(path)
         payload = files.get(path)
