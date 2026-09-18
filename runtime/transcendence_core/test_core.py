@@ -333,6 +333,66 @@ class TranscendenceCoreTests(unittest.TestCase):
                 }
             )
 
+    def test_lineage_rejects_empty_and_self_referential_edges(self):
+        base_event = {
+            "event_id": "event-1",
+            "event_type": "RESTORE",
+            "occurred_at": "2040-01-01T00:00:00Z",
+            "predecessor_snapshot_ids": ["snap-0"],
+            "descendant_snapshot_ids": ["snap-1"],
+            "substrates": [],
+            "evidence_refs": [],
+            "continuity_claims": {},
+            "unresolved_questions": [],
+        }
+
+        empty = {
+            "schema_version": "CONTINUITY-LINEAGE-V0",
+            "lineage_id": "synthetic-lineage",
+            "events": [dict(base_event, predecessor_snapshot_ids=[])],
+        }
+        with self.assertRaisesRegex(ValidationError, "non-empty predecessor"):
+            validate_lineage(empty)
+
+        self_loop = {
+            "schema_version": "CONTINUITY-LINEAGE-V0",
+            "lineage_id": "synthetic-lineage",
+            "events": [
+                dict(
+                    base_event,
+                    predecessor_snapshot_ids=["snap-0"],
+                    descendant_snapshot_ids=["snap-0"],
+                )
+            ],
+        }
+        with self.assertRaisesRegex(ValidationError, "own predecessor"):
+            validate_lineage(self_loop)
+
+    def test_lineage_rejects_cross_event_snapshot_cycle(self):
+        def event(event_id, predecessor, descendant):
+            return {
+                "event_id": event_id,
+                "event_type": "SUCCESSOR",
+                "occurred_at": "2040-01-01T00:00:00Z",
+                "predecessor_snapshot_ids": [predecessor],
+                "descendant_snapshot_ids": [descendant],
+                "substrates": [],
+                "evidence_refs": [],
+                "continuity_claims": {},
+                "unresolved_questions": [],
+            }
+
+        lineage = {
+            "schema_version": "CONTINUITY-LINEAGE-V0",
+            "lineage_id": "synthetic-lineage",
+            "events": [
+                event("event-a", "snap-a", "snap-b"),
+                event("event-b", "snap-b", "snap-a"),
+            ],
+        }
+        with self.assertRaisesRegex(ValidationError, "snapshot cycle detected"):
+            validate_lineage(lineage)
+
     def test_fork_requires_multiple_descendants(self):
         base = {
             "schema_version": "CONTINUITY-LINEAGE-V0",
