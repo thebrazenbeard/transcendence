@@ -166,6 +166,55 @@ class TranscendenceCoreTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             validate_hcsa(doc)
 
+    def test_hcsa_rejects_circular_transformation_provenance(self):
+        def record(record_id, input_ids):
+            return {
+                "record_id": record_id,
+                "archive_id": "synthetic",
+                "provenance_class": "INFERRED",
+                "source_artifact_ids": [],
+                "observed_at": "2040-01-01T00:00:00Z",
+                "payload_ref": f"objects/{record_id}",
+                "privacy_classification": "PRIVATE_SUBJECT",
+                "authority_scope": authority_scope(),
+                "integrity_digest": "2" * 64,
+                "provenance_history": [],
+                "transformation": {
+                    "input_record_ids": input_ids,
+                    "method_version": "fixture-v1",
+                    "information_discarded": None,
+                },
+            }
+
+        def document(records):
+            return {
+                "schema_version": "HCSA-V0",
+                "archive_id": "synthetic",
+                "subject_ref": "synthetic://subject/001",
+                "created_at": "2040-01-01T00:00:00Z",
+                "records": records,
+                "snapshots": [],
+            }
+
+        with self.assertRaisesRegex(
+            ValidationError,
+            "transformation provenance cycle detected",
+        ):
+            validate_hcsa(document([record("self-cycle", ["self-cycle"])]))
+
+        with self.assertRaisesRegex(
+            ValidationError,
+            "transformation provenance cycle detected",
+        ):
+            validate_hcsa(
+                document(
+                    [
+                        record("cycle-a", ["cycle-b"]),
+                        record("cycle-b", ["cycle-a"]),
+                    ]
+                )
+            )
+
     def test_read_only_bci_adapter_preserves_raw_reference(self):
         validate_bci_adapter(
             {
