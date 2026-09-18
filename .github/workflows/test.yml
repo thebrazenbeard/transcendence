@@ -17,11 +17,11 @@ jobs:
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
-      - name: Validate JSON schema documents
-        run: python -c "import glob,json; [json.load(open(p, encoding='utf-8')) for p in glob.glob('schemas/transcendence/*.json')]; print('schemas valid')"
-      - name: Test Transcendence V0 contracts
-        run: python -m unittest discover -s tests/transcendence -p 'test_*.py' -v
+      - name: Validate canonical V0 JSON schema documents
+        run: python -c "import glob,json; [json.load(open(p, encoding='utf-8')) for p in glob.glob('specs/transcendence/*.json')]; print('canonical V0 schemas valid')"
+      - name: Test canonical Transcendence V0 contracts
+        run: python -m unittest discover -s runtime/transcendence_core -p 'test_*.py' -v
       - name: Re-run imported HC reference kernel
         run: python -m unittest discover -s runtime/reference_kernel -p 'test_*.py' -v
-      - name: Compile reference tooling
-        run: python -m compileall -q transcendence_core
+      - name: Compile canonical reference tooling
+        run: python -m compileall -q runtime/transcendence_core
