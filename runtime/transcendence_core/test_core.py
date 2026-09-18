@@ -119,6 +119,85 @@ class TranscendenceCoreTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             validate_hcsa(doc)
 
+    def test_transformation_cannot_promote_self_reported_record_to_measured(self):
+        doc = {
+            "schema_version": "HCSA-V0",
+            "archive_id": "synthetic",
+            "subject_ref": "synthetic://subject/001",
+            "created_at": "2040-01-01T00:00:00Z",
+            "records": [
+                {
+                    "record_id": "self-report",
+                    "archive_id": "synthetic",
+                    "provenance_class": "SELF_REPORTED",
+                    "source_artifact_ids": [],
+                    "observed_at": "2040-01-01T00:00:00Z",
+                    "payload_ref": "objects/self-report",
+                    "privacy_classification": "PRIVATE_SUBJECT",
+                    "authority_scope": authority_scope(),
+                    "integrity_digest": "4" * 64,
+                    "provenance_history": [],
+                    "transformation": None,
+                },
+                {
+                    "record_id": "laundered-measurement",
+                    "archive_id": "synthetic",
+                    "provenance_class": "MEASURED",
+                    "source_artifact_ids": [],
+                    "observed_at": "2040-01-01T00:01:00Z",
+                    "payload_ref": "objects/laundered",
+                    "privacy_classification": "PRIVATE_SUBJECT",
+                    "authority_scope": authority_scope(),
+                    "integrity_digest": "5" * 64,
+                    "provenance_history": [],
+                    "transformation": {
+                        "input_record_ids": ["self-report"],
+                        "method_version": "fixture-v1",
+                        "information_discarded": None,
+                    },
+                },
+            ],
+            "snapshots": [],
+        }
+
+        with self.assertRaisesRegex(
+            ValidationError,
+            "non-measured evidence cannot be promoted into MEASURED",
+        ):
+            validate_hcsa(doc)
+
+    def test_provenance_history_cannot_relabel_self_reported_as_measured(self):
+        doc = {
+            "schema_version": "HCSA-V0",
+            "archive_id": "synthetic",
+            "subject_ref": "synthetic://subject/001",
+            "created_at": "2040-01-01T00:00:00Z",
+            "records": [
+                {
+                    "record_id": "laundered-history",
+                    "archive_id": "synthetic",
+                    "provenance_class": "MEASURED",
+                    "source_artifact_ids": [],
+                    "observed_at": "2040-01-01T00:00:00Z",
+                    "payload_ref": "objects/laundered-history",
+                    "privacy_classification": "PRIVATE_SUBJECT",
+                    "authority_scope": authority_scope(),
+                    "integrity_digest": "6" * 64,
+                    "provenance_history": [
+                        {"from": "SELF_REPORTED", "to": "MEASURED"}
+                    ],
+                    "transformation": None,
+                }
+            ],
+            "snapshots": [],
+        }
+
+        with self.assertRaisesRegex(
+            ValidationError,
+            "non-measured provenance cannot be relabeled MEASURED",
+        ):
+            validate_hcsa(doc)
+
     def test_transformation_cannot_promote_generated_record_to_measured(self):
         doc = {
             "schema_version": "HCSA-V0",
@@ -377,6 +456,16 @@ class TranscendenceCoreTests(unittest.TestCase):
                     "effect_capabilities": ["synthetic-stimulation"],
                     "effect_authority_scope": None,
                     "subject_state_context": None,
+                }
+            )
+
+    def test_lineage_requires_at_least_one_event(self):
+        with self.assertRaisesRegex(ValidationError, "at least one event"):
+            validate_lineage(
+                {
+                    "schema_version": "CONTINUITY-LINEAGE-V0",
+                    "lineage_id": "synthetic-lineage",
+                    "events": [],
                 }
             )
 
