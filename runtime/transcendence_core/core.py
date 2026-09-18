@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime
 from pathlib import PurePosixPath
 from typing import Any, Mapping
 
@@ -69,6 +70,17 @@ class ValidationError(ValueError):
     pass
 
 
+def _parse_timestamp(value: str, field: str) -> datetime:
+    normalized = value[:-1] + "+00:00" if value.endswith(("Z", "z")) else value
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError as exc:
+        raise ValidationError(f"{field} must be an ISO 8601 timestamp") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValidationError(f"{field} must include a timezone offset")
+    return parsed
+
+
 def canonical_json_bytes(value: Any) -> bytes:
     return json.dumps(
         value,
@@ -88,7 +100,8 @@ def validate_hcsa(document: Mapping[str, Any]) -> None:
     if _required_text(document, "schema_version") != "HCSA-V0":
         raise ValidationError("unsupported HCSA schema_version")
     _required_text(document, "subject_ref")
-    _required_text(document, "created_at")
+    created_at = _required_text(document, "created_at")
+    _parse_timestamp(created_at, "created_at")
 
     records = document.get("records")
     if not isinstance(records, list):
@@ -110,7 +123,8 @@ def validate_hcsa(document: Mapping[str, Any]) -> None:
         provenance = _required_text(record, "provenance_class")
         if provenance not in PROVENANCE_CLASSES:
             raise ValidationError(f"unknown provenance class: {provenance}")
-        _required_text(record, "observed_at")
+        observed_at = _required_text(record, "observed_at")
+        _parse_timestamp(observed_at, f"record {record_id} observed_at")
         _required_text(record, "payload_ref")
 
         privacy = _required_text(record, "privacy_classification")
@@ -211,13 +225,23 @@ def validate_hcsa(document: Mapping[str, Any]) -> None:
         if snapshot_id in snapshot_ids:
             raise ValidationError(f"duplicate snapshot_id: {snapshot_id}")
         snapshot_ids.add(snapshot_id)
-        _required_text(snapshot, "cutoff_at")
+        cutoff_at = _required_text(snapshot, "cutoff_at")
+        cutoff_time = _parse_timestamp(cutoff_at, f"snapshot {snapshot_id} cutoff_at")
         record_ids = snapshot.get("record_ids")
         if not isinstance(record_ids, list):
             raise ValidationError("snapshot record_ids must be a list")
         for record_id in record_ids:
-            if str(record_id) not in records_by_id:
+            record = records_by_id.get(str(record_id))
+            if record is None:
                 raise ValidationError(f"snapshot references unknown record: {record_id}")
+            observed_at = _parse_timestamp(
+                _required_text(record, "observed_at"),
+                f"record {record_id} observed_at",
+            )
+            if observed_at > cutoff_time:
+                raise ValidationError(
+                    f"snapshot {snapshot_id} includes record observed after cutoff"
+                )
         if not isinstance(snapshot.get("unresolved_conflicts"), list):
             raise ValidationError("snapshot unresolved_conflicts must be a list")
         if not isinstance(snapshot.get("unknowns"), list):
