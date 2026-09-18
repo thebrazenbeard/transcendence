@@ -299,6 +299,7 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
         raise ValidationError("events must be a list")
 
     seen: set[str] = set()
+    lineage_edges: dict[str, set[str]] = {}
     for event in events:
         if not isinstance(event, Mapping):
             raise ValidationError("lineage event must be an object")
@@ -316,8 +317,22 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
         descendants = event.get("descendant_snapshot_ids")
         if not isinstance(predecessors, list) or not isinstance(descendants, list):
             raise ValidationError("lineage event requires predecessor/descendant lists")
-        if event_type == "FORK" and len(descendants) < 2:
+        if not predecessors or not descendants:
+            raise ValidationError(
+                "lineage event requires non-empty predecessor and descendant sets"
+            )
+        predecessor_ids = tuple(str(item) for item in predecessors)
+        descendant_ids = tuple(str(item) for item in descendants)
+        if len(set(predecessor_ids)) != len(predecessor_ids):
+            raise ValidationError("lineage predecessor_snapshot_ids must be unique")
+        if len(set(descendant_ids)) != len(descendant_ids):
+            raise ValidationError("lineage descendant_snapshot_ids must be unique")
+        if set(predecessor_ids) & set(descendant_ids):
+            raise ValidationError("lineage event cannot descend to its own predecessor")
+        if event_type == "FORK" and len(descendant_ids) < 2:
             raise ValidationError("FORK requires at least two descendants")
+        for predecessor_id in predecessor_ids:
+            lineage_edges.setdefault(predecessor_id, set()).update(descendant_ids)
 
         substrates = event.get("substrates")
         if not isinstance(substrates, list):
@@ -367,6 +382,26 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
             claim_refs = claim.get("evidence_refs")
             if not isinstance(claim_refs, list):
                 raise ValidationError("continuity claim evidence_refs must be a list")
+
+    visiting_snapshots: set[str] = set()
+    visited_snapshots: set[str] = set()
+
+    def visit_snapshot(snapshot_id: str) -> None:
+        if snapshot_id in visiting_snapshots:
+            raise ValidationError("continuity lineage snapshot cycle detected")
+        if snapshot_id in visited_snapshots:
+            return
+        visiting_snapshots.add(snapshot_id)
+        for descendant_id in lineage_edges.get(snapshot_id, set()):
+            visit_snapshot(descendant_id)
+        visiting_snapshots.remove(snapshot_id)
+        visited_snapshots.add(snapshot_id)
+
+    all_snapshot_ids = set(lineage_edges)
+    for descendants in lineage_edges.values():
+        all_snapshot_ids.update(descendants)
+    for snapshot_id in all_snapshot_ids:
+        visit_snapshot(snapshot_id)
 
 
 def validate_portable_path(path: str) -> str:
