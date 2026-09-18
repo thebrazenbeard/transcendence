@@ -337,7 +337,7 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
 
 
 def validate_portable_path(path: str) -> str:
-    if not path or "\" in path or ":" in path:
+    if not path or "\\" in path or ":" in path:
         raise ValidationError("portable path must use non-empty POSIX relative syntax")
     p = PurePosixPath(path)
     if p.is_absolute() or any(part in {"", ".", ".."} for part in p.parts):
