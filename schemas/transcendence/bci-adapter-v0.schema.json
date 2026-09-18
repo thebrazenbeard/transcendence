@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thebrazenbeard.github.io/transcendence/schemas/bci-adapter-v0.schema.json",
+  "title": "Transcendence BCI Adapter Manifest V0",
+  "type": "object",
+  "required": [
+    "schema_version", "adapter_id", "adapter_version", "direction",
+    "modalities", "raw_representation", "normalization",
+    "uncertainty_model", "effect_capabilities", "effect_authority_scope"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "BCI_ADAPTER_V0"},
+    "adapter_id": {"type": "string", "minLength": 1},
+    "adapter_version": {"type": "string", "minLength": 1},
+    "direction": {"enum": ["ACQUIRE_ONLY", "EFFECT_ONLY", "BIDIRECTIONAL"]},
+    "modalities": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "spatial_resolution": {"type": ["string", "null"]},
+    "temporal_resolution": {"type": ["string", "null"]},
+    "coverage": {"type": ["string", "null"]},
+    "calibration_method": {"type": ["string", "null"]},
+    "raw_representation": {"type": "string", "minLength": 1},
+    "normalization": {
+      "type": "object",
+      "required": ["version", "preserves_raw_reference"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {"type": "string", "minLength": 1},
+        "preserves_raw_reference": {"const": true}
+      }
+    },
+    "decoder": {
+      "type": ["object", "null"],
+      "properties": {
+        "version": {"type": "string"},
+        "interpretation_provenance": {"enum": ["DERIVED", "INFERRED", "INTERPOLATED", "GENERATED", "UNKNOWN"]}
+      },
+      "required": ["version", "interpretation_provenance"],
+      "additionalProperties": false
+    },
+    "uncertainty_model": {"type": "string", "minLength": 1},
+    "subject_state_context": {"type": ["string", "null"]},
+    "effect_capabilities": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "effect_authority_scope": {
+      "type": ["object", "null"],
+      "properties": {
+        "scope_id": {"type": "string", "minLength": 1},
+        "allowed_effects": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        }
+      },
+      "required": ["scope_id", "allowed_effects"],
+      "additionalProperties": false
+    }
+  }
+}
