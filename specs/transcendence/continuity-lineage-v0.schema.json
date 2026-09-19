@@ -145,7 +145,8 @@
         },
         "occurred_at": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "format": "date-time"
         },
         "predecessor_snapshot_ids": {
           "type": "array",
