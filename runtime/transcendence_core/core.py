@@ -265,6 +265,8 @@ def validate_bci_adapter(document: Mapping[str, Any]) -> None:
     modalities = document.get("modalities")
     if not isinstance(modalities, list) or not modalities:
         raise ValidationError("BCI adapter requires at least one modality")
+    if len(set(map(str, modalities))) != len(modalities):
+        raise ValidationError("BCI adapter modalities must be unique")
     _required_text(document, "raw_representation")
     _required_text(document, "uncertainty_model")
 
@@ -293,6 +295,8 @@ def validate_bci_adapter(document: Mapping[str, Any]) -> None:
     effects = document.get("effect_capabilities")
     if not isinstance(effects, list):
         raise ValidationError("effect_capabilities must be a list")
+    if len(set(map(str, effects))) != len(effects):
+        raise ValidationError("effect_capabilities must be unique")
     if direction == "ACQUIRE" and effects:
         raise ValidationError(
             "ACQUIRE adapter cannot declare effect_capabilities"
@@ -310,12 +314,16 @@ def validate_bci_adapter(document: Mapping[str, Any]) -> None:
         allowed_effects = authority.get("allowed_effects")
         if not isinstance(allowed_effects, list):
             raise ValidationError("effect_authority_scope.allowed_effects must be a list")
+        if len(set(map(str, allowed_effects))) != len(allowed_effects):
+            raise ValidationError(
+                "effect_authority_scope.allowed_effects must be unique"
+            )
         missing = set(map(str, effects)) - set(map(str, allowed_effects))
         if missing:
             raise ValidationError(
                 f"effect_authority_scope does not cover effects: {sorted(missing)}"
             )
-    elif authority not in (None, {}):
+    elif authority is not None:
         raise ValidationError("acquire-only adapter must not imply effect authority")
 
 
