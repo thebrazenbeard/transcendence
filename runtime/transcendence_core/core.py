@@ -540,6 +540,10 @@ def verify_integrity_manifest(
     manifest: Mapping[str, Any],
 ) -> tuple[bool, tuple[str, ...]]:
     errors: list[str] = []
+    if not isinstance(manifest, Mapping):
+        return False, ("manifest must be an object",)
+    if set(manifest) - {"schema_version", "entries", "manifest_sha256"}:
+        errors.append("manifest contains unsupported fields")
     if manifest.get("schema_version") != "HCSA-INTEGRITY-V0":
         errors.append("unsupported manifest schema_version")
     entries = manifest.get("entries")
@@ -558,11 +562,32 @@ def verify_integrity_manifest(
         if not isinstance(entry, Mapping):
             errors.append("invalid manifest entry")
             continue
+        extra_fields = set(entry) - {"path", "sha256", "bytes"}
+        if extra_fields:
+            errors.append("manifest entry contains unsupported fields")
+        raw_path = entry.get("path")
+        if not isinstance(raw_path, str):
+            errors.append("manifest entry path must be a string")
+            continue
         try:
-            path = validate_portable_path(str(entry["path"]))
-        except (KeyError, ValidationError) as exc:
+            path = validate_portable_path(raw_path)
+        except ValidationError as exc:
             errors.append(str(exc))
             continue
+        declared_digest = entry.get("sha256")
+        if (
+            not isinstance(declared_digest, str)
+            or len(declared_digest) != 64
+            or any(ch not in "0123456789abcdef" for ch in declared_digest)
+        ):
+            errors.append(f"invalid sha256: {path}")
+        declared_bytes = entry.get("bytes")
+        if (
+            not isinstance(declared_bytes, int)
+            or isinstance(declared_bytes, bool)
+            or declared_bytes < 0
+        ):
+            errors.append(f"invalid byte count: {path}")
         if path in declared_paths:
             errors.append(f"duplicate manifest path: {path}")
             continue
@@ -571,14 +596,22 @@ def verify_integrity_manifest(
         if payload is None:
             errors.append(f"missing file: {path}")
             continue
+        if not isinstance(payload, (bytes, bytearray)):
+            errors.append(f"invalid file payload type: {path}")
+            continue
         digest = hashlib.sha256(bytes(payload)).hexdigest()
-        if digest != entry.get("sha256"):
+        if digest != declared_digest:
             errors.append(f"digest mismatch: {path}")
-        if len(payload) != entry.get("bytes"):
+        if len(payload) != declared_bytes:
             errors.append(f"size mismatch: {path}")
 
     safe_actual_paths: set[str] = set()
-    for path in files:
+    for path, payload in files.items():
+        if not isinstance(path, str):
+            errors.append(f"invalid supplied path type: {path!r}")
+            continue
+        if not isinstance(payload, (bytes, bytearray)):
+            errors.append(f"invalid file payload type: {path}")
         try:
             safe_actual_paths.add(validate_portable_path(path))
         except ValidationError as exc:

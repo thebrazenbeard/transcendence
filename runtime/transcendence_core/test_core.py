@@ -884,6 +884,49 @@ class TranscendenceCoreTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertTrue(any("undeclared file" in item for item in errors))
 
+    def test_integrity_manifest_runtime_matches_schema_types_and_closed_shape(self):
+        files = {"objects/a.bin": b"abc"}
+        manifest = build_integrity_manifest(files)
+
+        cases = []
+
+        bad = dict(manifest)
+        bad["extra"] = True
+        cases.append((files, bad, "unsupported fields"))
+
+        bad = json.loads(json.dumps(manifest))
+        bad["entries"][0]["path"] = 123
+        bad["manifest_sha256"] = sha256_json(bad["entries"])
+        cases.append((files, bad, "path must be a string"))
+
+        bad = json.loads(json.dumps(manifest))
+        bad["entries"][0]["bytes"] = True
+        bad["manifest_sha256"] = sha256_json(bad["entries"])
+        cases.append((files, bad, "invalid byte count"))
+
+        bad = json.loads(json.dumps(manifest))
+        bad["entries"][0]["extra"] = "x"
+        bad["manifest_sha256"] = sha256_json(bad["entries"])
+        cases.append((files, bad, "unsupported fields"))
+
+        bad_files = {"objects/a.bin": "abc"}
+        cases.append((bad_files, manifest, "invalid file payload type"))
+
+        for supplied_files, supplied_manifest, marker in cases:
+            with self.subTest(marker=marker):
+                ok, errors = verify_integrity_manifest(
+                    supplied_files,
+                    supplied_manifest,
+                )
+                self.assertFalse(ok)
+                self.assertTrue(any(marker in error for error in errors), errors)
+
+    def test_integrity_manifest_rejects_nonstring_supplied_paths_structured(self):
+        manifest = build_integrity_manifest({"objects/a.bin": b"abc"})
+        ok, errors = verify_integrity_manifest({123: b"abc"}, manifest)
+        self.assertFalse(ok)
+        self.assertTrue(any("invalid supplied path type" in error for error in errors))
+
     def test_integrity_manifest_rejects_duplicate_declared_paths(self):
         files = {"objects/a.bin": b"abc"}
         manifest = build_integrity_manifest(files)
