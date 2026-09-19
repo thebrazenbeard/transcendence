@@ -459,6 +459,73 @@ class TranscendenceCoreTests(unittest.TestCase):
                 }
             )
 
+    def test_bci_runtime_matches_schema_on_unique_lists(self):
+        base = {
+            "schema_version": "BCI-ADAPTER-V0",
+            "adapter_id": "synthetic-bidir",
+            "adapter_version": "0.1",
+            "direction": "BIDIRECTIONAL",
+            "modalities": ["electrophysiology", "stimulation"],
+            "raw_representation": "application/octet-stream",
+            "normalization": {"version": "v1", "preserves_raw_reference": True},
+            "decoder": None,
+            "uncertainty_model": "synthetic",
+            "effect_capabilities": ["synthetic-stimulation"],
+            "effect_authority_scope": {
+                "scope_id": "scope-1",
+                "allowed_effects": ["synthetic-stimulation"],
+            },
+            "subject_state_context": None,
+        }
+
+        duplicate_modalities = dict(base, modalities=["stimulation", "stimulation"])
+        with self.assertRaisesRegex(ValidationError, "modalities must be unique"):
+            validate_bci_adapter(duplicate_modalities)
+
+        duplicate_effects = dict(
+            base,
+            effect_capabilities=["synthetic-stimulation", "synthetic-stimulation"],
+        )
+        with self.assertRaisesRegex(ValidationError, "effect_capabilities must be unique"):
+            validate_bci_adapter(duplicate_effects)
+
+        duplicate_authority = dict(
+            base,
+            effect_authority_scope={
+                "scope_id": "scope-1",
+                "allowed_effects": ["synthetic-stimulation", "synthetic-stimulation"],
+            },
+        )
+        with self.assertRaisesRegex(
+            ValidationError, "effect_authority_scope.allowed_effects must be unique"
+        ):
+            validate_bci_adapter(duplicate_authority)
+
+    def test_acquire_only_bci_requires_null_effect_authority_scope(self):
+        with self.assertRaisesRegex(
+            ValidationError,
+            "acquire-only adapter must not imply effect authority",
+        ):
+            validate_bci_adapter(
+                {
+                    "schema_version": "BCI-ADAPTER-V0",
+                    "adapter_id": "synthetic-acquire",
+                    "adapter_version": "0.1",
+                    "direction": "ACQUIRE",
+                    "modalities": ["electrophysiology"],
+                    "raw_representation": "application/octet-stream",
+                    "normalization": {
+                        "version": "v1",
+                        "preserves_raw_reference": True,
+                    },
+                    "decoder": None,
+                    "uncertainty_model": "synthetic",
+                    "effect_capabilities": [],
+                    "effect_authority_scope": {},
+                    "subject_state_context": None,
+                }
+            )
+
     def test_lineage_requires_at_least_one_event(self):
         with self.assertRaisesRegex(ValidationError, "at least one event"):
             validate_lineage(
