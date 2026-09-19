@@ -342,7 +342,8 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
         event_type = _required_text(event, "event_type")
         if event_type not in LINEAGE_EVENT_TYPES:
             raise ValidationError(f"invalid lineage event type: {event_type}")
-        _required_text(event, "occurred_at")
+        occurred_at = _required_text(event, "occurred_at")
+        _parse_timestamp(occurred_at, f"lineage event {event_id} occurred_at")
 
         predecessors = event.get("predecessor_snapshot_ids")
         descendants = event.get("descendant_snapshot_ids")
