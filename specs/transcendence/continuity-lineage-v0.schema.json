@@ -21,7 +21,8 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/event"
-      }
+      },
+      "minItems": 1
     }
   },
   "$defs": {
@@ -144,7 +145,8 @@
         },
         "occurred_at": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "format": "date-time"
         },
         "predecessor_snapshot_ids": {
           "type": "array",
@@ -222,6 +224,16 @@
             "properties": {
               "descendant_snapshot_ids": {
                 "minItems": 2
+              },
+              "predecessor_snapshot_ids": {
+                "maxItems": 1
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "descendant_snapshot_ids": {
+                "maxItems": 1
               }
             }
           }
