@@ -469,6 +469,37 @@ class TranscendenceCoreTests(unittest.TestCase):
                 }
             )
 
+    def test_lineage_timestamp_requires_iso8601_with_timezone(self):
+        base_event = {
+            "event_id": "event-1",
+            "event_type": "RESTORE",
+            "occurred_at": "2040-01-01T00:00:00Z",
+            "predecessor_snapshot_ids": ["snap-0"],
+            "descendant_snapshot_ids": ["snap-1"],
+            "substrates": [],
+            "evidence_refs": [],
+            "continuity_claims": {},
+            "unresolved_questions": [],
+        }
+
+        for bad in ("not-a-time", "2040-01-01T00:00:00"):
+            lineage = {
+                "schema_version": "CONTINUITY-LINEAGE-V0",
+                "lineage_id": "synthetic-lineage",
+                "events": [dict(base_event, occurred_at=bad)],
+            }
+            with self.assertRaises(ValidationError):
+                validate_lineage(lineage)
+
+        validate_lineage(
+            {
+                "schema_version": "CONTINUITY-LINEAGE-V0",
+                "lineage_id": "synthetic-lineage",
+                "events": [dict(base_event, occurred_at="2040-01-01T01:00:00+01:00")],
+            }
+        )
+
+
     def test_lineage_rejects_empty_and_self_referential_edges(self):
         base_event = {
             "event_id": "event-1",
