@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thebrazenbeard.github.io/transcendence/specs/hcsa-v0.schema.json",
+  "title": "Human Cognitive State Archive V0",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "archive_id",
+    "subject_ref",
+    "created_at",
+    "records",
+    "snapshots"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "HCSA-V0"
+    },
+    "archive_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subject_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1,
+      "format": "date-time"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/record"
+      }
+    },
+    "snapshots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/snapshot"
+      }
+    }
+  },
+  "$defs": {
+    "authority_scope": {
+      "type": "object",
+      "required": [
+        "storage",
+        "read",
+        "research",
+        "training",
+        "interpretation",
+        "reconstruction",
+        "activation",
+        "replication",
+        "disclosure"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "storage": {
+          "type": "boolean"
+        },
+        "read": {
+          "type": "boolean"
+        },
+        "research": {
+          "type": "boolean"
+        },
+        "training": {
+          "type": "boolean"
+        },
+        "interpretation": {
+          "type": "boolean"
+        },
+        "reconstruction": {
+          "type": "boolean"
+        },
+        "activation": {
+          "type": "boolean"
+        },
+        "replication": {
+          "type": "boolean"
+        },
+        "disclosure": {
+          "type": "boolean"
+        }
+      }
+    },
+    "record": {
+      "type": "object",
+      "required": [
+        "record_id",
+        "archive_id",
+        "provenance_class",
+        "source_artifact_ids",
+        "observed_at",
+        "payload_ref",
+        "privacy_classification",
+        "authority_scope",
+        "integrity_digest"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "record_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "archive_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provenance_class": {
+          "enum": [
+            "MEASURED",
+            "BEHAVIORALLY_OBSERVED",
+            "SELF_REPORTED",
+            "DERIVED",
+            "INFERRED",
+            "INTERPOLATED",
+            "GENERATED",
+            "IMPORTED_REFERENCE",
+            "UNKNOWN"
+          ]
+        },
+        "source_artifact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "observed_at": {
+          "type": "string",
+          "minLength": 1,
+          "format": "date-time"
+        },
+        "capture_method": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "biological_interval": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scope": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "payload_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "representation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "units": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uncertainty": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "model_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "privacy_classification": {
+          "enum": [
+            "PUBLIC",
+            "PRIVATE_SUBJECT",
+            "SENSITIVE_SUBJECT",
+            "RESTRICTED_SUBJECT"
+          ]
+        },
+        "authority_scope": {
+          "$ref": "#/$defs/authority_scope"
+        },
+        "integrity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "provenance_history": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "transformation": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "input_record_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "method_version": {
+              "type": "string"
+            },
+            "information_discarded": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "input_record_ids",
+            "method_version"
+          ],
+          "additionalProperties": false
+        },
+        "supersedes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "required": [
+        "snapshot_id",
+        "cutoff_at",
+        "record_ids",
+        "unresolved_conflicts",
+        "unknowns"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "snapshot_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cutoff_at": {
+          "type": "string",
+          "minLength": 1,
+          "format": "date-time"
+        },
+        "record_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "unresolved_conflicts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
