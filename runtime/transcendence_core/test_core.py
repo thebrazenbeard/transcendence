@@ -712,5 +712,110 @@ class TranscendenceCoreTests(unittest.TestCase):
                 validate_portable_path(bad)
 
 
+    def test_lineage_occurred_at_requires_timezone_aware_iso_timestamp(self):
+        lineage = {
+            "schema_version": "CONTINUITY-LINEAGE-V0",
+            "lineage_id": "synthetic-lineage",
+            "events": [{
+                "event_id": "event-time",
+                "event_type": "SUCCESSOR",
+                "occurred_at": "not-a-timestamp",
+                "predecessor_snapshot_ids": ["snap-0"],
+                "descendant_snapshot_ids": ["snap-1"],
+                "substrates": [],
+                "evidence_refs": [],
+                "continuity_claims": {},
+                "unresolved_questions": [],
+            }],
+        }
+        with self.assertRaisesRegex(ValidationError, "ISO 8601 timestamp"):
+            validate_lineage(lineage)
+
+        lineage["events"][0]["occurred_at"] = "2040-01-01T00:00:00"
+        with self.assertRaisesRegex(ValidationError, "timezone offset"):
+            validate_lineage(lineage)
+
+    def test_non_fork_event_cannot_hide_multiple_descendants(self):
+        lineage = {
+            "schema_version": "CONTINUITY-LINEAGE-V0",
+            "lineage_id": "synthetic-lineage",
+            "events": [{
+                "event_id": "event-hidden-fork",
+                "event_type": "SUCCESSOR",
+                "occurred_at": "2040-01-01T00:00:00Z",
+                "predecessor_snapshot_ids": ["snap-0"],
+                "descendant_snapshot_ids": ["snap-1", "snap-2"],
+                "substrates": [],
+                "evidence_refs": [],
+                "continuity_claims": {},
+                "unresolved_questions": [],
+            }],
+        }
+        with self.assertRaisesRegex(ValidationError, "non-FORK.*exactly one descendant"):
+            validate_lineage(lineage)
+
+    def test_predecessor_snapshot_cannot_fork_across_separate_events(self):
+        def event(event_id, descendant):
+            return {
+                "event_id": event_id,
+                "event_type": "SUCCESSOR",
+                "occurred_at": "2040-01-01T00:00:00Z",
+                "predecessor_snapshot_ids": ["snap-0"],
+                "descendant_snapshot_ids": [descendant],
+                "substrates": [],
+                "evidence_refs": [],
+                "continuity_claims": {},
+                "unresolved_questions": [],
+            }
+
+        lineage = {
+            "schema_version": "CONTINUITY-LINEAGE-V0",
+            "lineage_id": "synthetic-lineage",
+            "events": [event("event-a", "snap-1"), event("event-b", "snap-2")],
+        }
+        with self.assertRaisesRegex(ValidationError, "one explicit FORK event"):
+            validate_lineage(lineage)
+
+    def test_lineage_runtime_rejects_unknown_or_duplicate_substrate_metadata(self):
+        base = {
+            "schema_version": "CONTINUITY-LINEAGE-V0",
+            "lineage_id": "synthetic-lineage",
+            "events": [{
+                "event_id": "event-substrate",
+                "event_type": "SUCCESSOR",
+                "occurred_at": "2040-01-01T00:00:00Z",
+                "predecessor_snapshot_ids": ["snap-0"],
+                "descendant_snapshot_ids": ["snap-1"],
+                "substrates": [{
+                    "substrate_id": "s1",
+                    "substrate_class": "SYNTHETIC",
+                    "role": "TARGET",
+                    "interval": None,
+                }],
+                "evidence_refs": [],
+                "continuity_claims": {},
+                "unresolved_questions": [],
+            }],
+        }
+
+        bad_class = json.loads(json.dumps(base))
+        bad_class["events"][0]["substrates"][0]["substrate_class"] = "MAGICAL"
+        with self.assertRaisesRegex(ValidationError, "invalid substrate_class"):
+            validate_lineage(bad_class)
+
+        bad_role = json.loads(json.dumps(base))
+        bad_role["events"][0]["substrates"][0]["role"] = "OWNER"
+        with self.assertRaisesRegex(ValidationError, "invalid substrate role"):
+            validate_lineage(bad_role)
+
+        duplicate = json.loads(json.dumps(base))
+        duplicate["events"][0]["substrates"].append(
+            dict(duplicate["events"][0]["substrates"][0])
+        )
+        with self.assertRaisesRegex(ValidationError, "duplicate substrate_id"):
+            validate_lineage(duplicate)
+
+
+
 if __name__ == "__main__":
     unittest.main()
