@@ -65,6 +65,24 @@ NONBIOLOGICAL_SUBSTRATES = {
     "UNKNOWN",
 }
 
+SUBSTRATE_CLASSES = {"BIOLOGICAL", *NONBIOLOGICAL_SUBSTRATES}
+
+SUBSTRATE_ROLES = {
+    "SOURCE",
+    "TARGET",
+    "OVERLAPPING_ACTIVE",
+    "ARCHIVAL_ONLY",
+}
+
+CONTINUITY_STATUSES = {
+    "SUPPORTED",
+    "PARTIAL",
+    "UNKNOWN",
+    "UNESTABLISHED",
+    "CONTRADICTED",
+    "NOT_APPLICABLE",
+}
+
 
 class ValidationError(ValueError):
     pass
@@ -79,6 +97,22 @@ def _parse_timestamp(value: str, field: str) -> datetime:
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise ValidationError(f"{field} must include a timezone offset")
     return parsed
+
+
+def _string_list(
+    value: Any,
+    field: str,
+    *,
+    unique: bool = False,
+) -> tuple[str, ...]:
+    if not isinstance(value, list):
+        raise ValidationError(f"{field} must be a list")
+    if any(not isinstance(item, str) for item in value):
+        raise ValidationError(f"{field} entries must be strings")
+    result = tuple(value)
+    if unique and len(set(result)) != len(result):
+        raise ValidationError(f"{field} must be unique")
+    return result
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -353,20 +387,20 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
         occurred_at = _required_text(event, "occurred_at")
         _parse_timestamp(occurred_at, f"lineage event {event_id} occurred_at")
 
-        predecessors = event.get("predecessor_snapshot_ids")
-        descendants = event.get("descendant_snapshot_ids")
-        if not isinstance(predecessors, list) or not isinstance(descendants, list):
-            raise ValidationError("lineage event requires predecessor/descendant lists")
-        if not predecessors or not descendants:
+        predecessor_ids = _string_list(
+            event.get("predecessor_snapshot_ids"),
+            "lineage predecessor_snapshot_ids",
+            unique=True,
+        )
+        descendant_ids = _string_list(
+            event.get("descendant_snapshot_ids"),
+            "lineage descendant_snapshot_ids",
+            unique=True,
+        )
+        if not predecessor_ids or not descendant_ids:
             raise ValidationError(
                 "lineage event requires non-empty predecessor and descendant sets"
             )
-        predecessor_ids = tuple(str(item) for item in predecessors)
-        descendant_ids = tuple(str(item) for item in descendants)
-        if len(set(predecessor_ids)) != len(predecessor_ids):
-            raise ValidationError("lineage predecessor_snapshot_ids must be unique")
-        if len(set(descendant_ids)) != len(descendant_ids):
-            raise ValidationError("lineage descendant_snapshot_ids must be unique")
         if set(predecessor_ids) & set(descendant_ids):
             raise ValidationError("lineage event cannot descend to its own predecessor")
         if event_type == "FORK" and len(descendant_ids) < 2:
@@ -384,7 +418,16 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
                 raise ValidationError("substrate participation must be an object")
             _required_text(substrate, "substrate_id")
             substrate_class = _required_text(substrate, "substrate_class")
+            if substrate_class not in SUBSTRATE_CLASSES:
+                raise ValidationError(
+                    f"invalid lineage substrate_class: {substrate_class}"
+                )
             role = _required_text(substrate, "role")
+            if role not in SUBSTRATE_ROLES:
+                raise ValidationError(f"invalid lineage substrate role: {role}")
+            interval = substrate.get("interval")
+            if interval is not None and not isinstance(interval, str):
+                raise ValidationError("lineage substrate interval must be string or null")
             if role == "OVERLAPPING_ACTIVE":
                 if substrate_class == "BIOLOGICAL":
                     biological_overlap = True
@@ -397,11 +440,15 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
                     "GRADUAL_TRANSFER requires overlapping active biological and non-biological substrates"
                 )
 
-        refs = event.get("evidence_refs")
-        if not isinstance(refs, list):
-            raise ValidationError("lineage event evidence_refs must be a list")
-        if not isinstance(event.get("unresolved_questions"), list):
-            raise ValidationError("lineage event unresolved_questions must be a list")
+        refs = _string_list(
+            event.get("evidence_refs"),
+            "lineage event evidence_refs",
+            unique=True,
+        )
+        _string_list(
+            event.get("unresolved_questions"),
+            "lineage event unresolved_questions",
+        )
 
         claims = event.get("continuity_claims")
         if not isinstance(claims, Mapping):
@@ -412,6 +459,8 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
             if not isinstance(claim, Mapping):
                 raise ValidationError("continuity claim must be an object")
             status = _required_text(claim, "status")
+            if status not in CONTINUITY_STATUSES:
+                raise ValidationError(f"invalid continuity claim status: {status}")
             if dimension == "PHENOMENAL_SUBJECTIVE" and status not in {
                 "UNKNOWN",
                 "UNESTABLISHED",
@@ -419,17 +468,16 @@ def validate_lineage(document: Mapping[str, Any]) -> None:
                 raise ValidationError(
                     "V0 phenomenal continuity must remain UNKNOWN/UNESTABLISHED"
                 )
-            claim_refs = claim.get("evidence_refs")
-            if not isinstance(claim_refs, list):
-                raise ValidationError("continuity claim evidence_refs must be a list")
-            claim_ref_ids = tuple(str(item) for item in claim_refs)
-            if len(set(claim_ref_ids)) != len(claim_ref_ids):
-                raise ValidationError("continuity claim evidence_refs must be unique")
+            claim_ref_ids = _string_list(
+                claim.get("evidence_refs"),
+                "continuity claim evidence_refs",
+                unique=True,
+            )
             if status in {"SUPPORTED", "PARTIAL"} and not claim_ref_ids:
                 raise ValidationError(
                     "supported/partial continuity claim requires evidence_refs"
                 )
-            event_ref_ids = set(map(str, refs))
+            event_ref_ids = set(refs)
             if not set(claim_ref_ids).issubset(event_ref_ids):
                 raise ValidationError(
                     "continuity claim references evidence outside event evidence_refs"

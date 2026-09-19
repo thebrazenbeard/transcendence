@@ -770,6 +770,102 @@ class TranscendenceCoreTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             validate_lineage(lineage)
 
+    def test_lineage_runtime_rejects_schema_invalid_typed_and_enum_values(self):
+        base_event = {
+            "event_id": "event-1",
+            "event_type": "RESTORE",
+            "occurred_at": "2040-01-01T00:00:00Z",
+            "predecessor_snapshot_ids": ["snap-0"],
+            "descendant_snapshot_ids": ["snap-1"],
+            "substrates": [
+                {
+                    "substrate_id": "synthetic",
+                    "substrate_class": "SYNTHETIC",
+                    "role": "TARGET",
+                    "interval": None,
+                }
+            ],
+            "evidence_refs": ["evidence-1"],
+            "continuity_claims": {
+                "FUNCTIONAL": {
+                    "status": "SUPPORTED",
+                    "evidence_refs": ["evidence-1"],
+                }
+            },
+            "unresolved_questions": ["phenomenal-continuity"],
+        }
+
+        invalid_mutations = (
+            ("predecessor type", lambda e: e.update(predecessor_snapshot_ids=[123])),
+            ("descendant type", lambda e: e.update(descendant_snapshot_ids=[None])),
+            (
+                "substrate class",
+                lambda e: e["substrates"][0].update(substrate_class="MAGICAL"),
+            ),
+            (
+                "substrate role",
+                lambda e: e["substrates"][0].update(role="OWNER"),
+            ),
+            (
+                "substrate interval",
+                lambda e: e["substrates"][0].update(interval=123),
+            ),
+            (
+                "claim status",
+                lambda e: e["continuity_claims"]["FUNCTIONAL"].update(
+                    status="PROVEN"
+                ),
+            ),
+            (
+                "event evidence type",
+                lambda e: e.update(evidence_refs=[123]),
+            ),
+            (
+                "claim evidence type",
+                lambda e: e["continuity_claims"]["FUNCTIONAL"].update(
+                    evidence_refs=[123]
+                ),
+            ),
+            (
+                "unresolved question type",
+                lambda e: e.update(unresolved_questions=[123]),
+            ),
+        )
+
+        for label, mutate in invalid_mutations:
+            event = json.loads(json.dumps(base_event))
+            mutate(event)
+            with self.subTest(label=label):
+                with self.assertRaises(ValidationError):
+                    validate_lineage(
+                        {
+                            "schema_version": "CONTINUITY-LINEAGE-V0",
+                            "lineage_id": "synthetic-lineage",
+                            "events": [event],
+                        }
+                    )
+
+    def test_lineage_runtime_rejects_duplicate_event_evidence_refs(self):
+        event = {
+            "event_id": "event-1",
+            "event_type": "RESTORE",
+            "occurred_at": "2040-01-01T00:00:00Z",
+            "predecessor_snapshot_ids": ["snap-0"],
+            "descendant_snapshot_ids": ["snap-1"],
+            "substrates": [],
+            "evidence_refs": ["evidence-1", "evidence-1"],
+            "continuity_claims": {},
+            "unresolved_questions": [],
+        }
+        with self.assertRaisesRegex(ValidationError, "evidence_refs must be unique"):
+            validate_lineage(
+                {
+                    "schema_version": "CONTINUITY-LINEAGE-V0",
+                    "lineage_id": "synthetic-lineage",
+                    "events": [event],
+                }
+            )
+
     def test_integrity_manifest_detects_tampering_and_unmanifested_files(self):
         files = {"objects/a.bin": b"abc", "metadata/archive.json": b"{}"}
         manifest = build_integrity_manifest(files)
