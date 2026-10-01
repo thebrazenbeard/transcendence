@@ -1,0 +1,37 @@
+name: Transcendence core qualification
+
+on:
+  push:
+    branches:
+      - qualification/current-main-transcendence-core-v1-20260930
+    paths:
+      - "runtime/transcendence_core/**"
+      - ".github/workflows/transcendence-core.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "runtime/transcendence_core/**"
+      - ".github/workflows/transcendence-core.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact subject
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Run Transcendence core tests
+        working-directory: runtime/transcendence_core
+        run: python -m unittest -v test_core.py
+      - name: Compile core
+        run: python -m compileall -q runtime/transcendence_core
