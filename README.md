@@ -55,3 +55,9 @@ Source-level workspace safety checks also guard against a previously removed con
 **Status: research architecture with executable control-reference slices.** There is no complete temporal hypergraph executor, organ scheduler, distributed coalition runtime, trained language model, authenticated multi-provider host, physical embodiment interface, or end-to-end cognitive deployment in this repository. Reuse the documented interfaces as an evaluation/design reference; implement and qualify real service, process-isolation, identity, consent, provider, storage, and effect controls separately.
 
 Contributions follow [CONTRIBUTING.md](CONTRIBUTING.md) and [CLA.md](CLA.md). Public source visibility does not grant an unrestricted software redistribution or model-training license.
+
+## Editor startup containment — tracked source (2026-11-20)
+
+The tracked `main` source formerly contained a concealed VS Code `folderOpen` task invoking obfuscated `.vscode/ini` through Node. The task list is now empty, `task.allowAutomaticTasks` is explicitly `"off"`, and the obfuscated file is removed from this source tree. Historical Git source remains for investigation.
+
+**Limits:** This is source-only containment, not proof that older checkouts, editor extensions, user/global settings, local credentials, or any previous host execution are safe. Do not execute historical suspect assets.
